@@ -6,9 +6,10 @@
     "license": "MIT",
     "config": [
         {
-            "name": "station",
-            "type": "text",
-            "default": "Walpurgisstraße"
+            "name": "stopid",
+            "type": "number",
+            "min": 0,
+            "default": "33000029"
         }
     ]
 }

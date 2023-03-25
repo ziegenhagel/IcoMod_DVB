@@ -1,10 +1,10 @@
 /*
-  IcoMod_Logo.cpp - IcoDesk Module to display the animated Logo.
+  IcoMod_DVB.cpp - IcoDesk Module to display the animated Logo.
   Created by Till Michels, February 2, 2023.
 */
 
-#ifndef IcoMod_Logo_h
-#define IcoMod_Logo_h
+#ifndef IcoMod_DVB_h
+#define IcoMod_DVB_h
 
 #include "Arduino.h"
 #include "IcoMod.h"
@@ -19,6 +19,10 @@ class IcoMod_DVB : public IcoMod
     void onClick();
     void initialize();
     void refresh();
+
+  private:
+    String _url;
+    String _payload;
 };
 
 #endif
