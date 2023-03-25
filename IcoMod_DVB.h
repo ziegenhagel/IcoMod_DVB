@@ -11,6 +11,7 @@
 #include <ArduinoJson.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
+#include <chrono>
 
 class IcoMod_DVB : public IcoMod
 {
@@ -20,12 +21,15 @@ class IcoMod_DVB : public IcoMod
     void initialize();
     void refresh();
     void refreshDepartures();
+    String getHumanReadableTime(String time);
 
   private:
     String _url;
     String _payload;
     unsigned long _lastRefresh;
     JsonArray _departures;
+    Adafruit_ST7735* _tft;
+    unsigned int* _colors;
 };
 
 #endif
