@@ -1,0 +1,14 @@
+ {
+    "name": "DVB",
+    "version": "1.0.0",
+    "description": "Zeigt an, welche Linien wann fahren",
+    "author": "Donemeier",
+    "license": "MIT",
+    "config": [
+        {
+            "name": "station",
+            "type": "text",
+            "default": "Walpurgisstraße"
+        }
+    ]
+}
