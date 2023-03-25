@@ -19,10 +19,13 @@ class IcoMod_DVB : public IcoMod
     void onClick();
     void initialize();
     void refresh();
+    void refreshDepartures();
 
   private:
     String _url;
     String _payload;
+    unsigned long _lastRefresh;
+    JsonArray _departures;
 };
 
 #endif
