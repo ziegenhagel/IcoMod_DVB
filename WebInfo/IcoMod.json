@@ -6,10 +6,23 @@
     "license": "MIT",
     "config": [
         {
-            "name": "stopid",
-            "type": "number",
+            "name": "stopId",
+            "type": "array",
+            "of": "number",
             "min": 0,
-            "default": "33000029"
+            "default": "33000029",
+            "description": "Die Haltestellen ID (z.B. 33000029), unter https://dvb.peppnet.de/stations/ zu finden",
+            "autocomplete": {
+                "request": {
+                    "url":"https://webapi.vvo-online.de/tr/pointfinder",
+                    "method":"POST",
+                    "parameter": "query"
+                },
+                "response": {
+                    "parameter": "Points",
+                    "regex": "([0-9]+)\\|"
+                }
+            }
         }
     ]
 }

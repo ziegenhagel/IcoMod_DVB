@@ -29,6 +29,9 @@ class IcoMod_DVB : public IcoMod
     String _payload;
     unsigned long _lastRefresh;
     JsonArray _departures;
+    String _stopName;
+    JsonArray _stopIds;
+    unsigned int _currentStopId;
     Adafruit_ST7735* _tft;
     unsigned int* _colors;
     unsigned long long _currentTimestamp;

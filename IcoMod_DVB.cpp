@@ -19,10 +19,14 @@ IcoMod_DVB::IcoMod_DVB(Adafruit_ST7735* tft, unsigned int colors[], JsonObject &
   _url = "https://webapi.vvo-online.de/dm";
 
   // get stopid from config
-  String stopid = config["stopid"];
+  // String stopId = config["stopId"];
+  _stopIds = config["stopIds"];
+  _currentStopId = 0;
+
+  _stopName = "Nix";
 
   // have the request string
-  _payload = "{\"limit\":8,\"stopid\":" + stopid + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
+  _payload = "{\"limit\":8,\"stopid\":" + _stopIds[_currentStopId].as<String>() + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
 
   // last time the module was refreshed
   _lastRefresh = 0;
@@ -48,7 +52,7 @@ void IcoMod_DVB::getTimestamp() {
   HTTPClient http;
 
   // set the url
-  http.begin("http://10.10.10.125:3000/api/timestamp");
+  http.begin("http://icode.sk/api/timestamp");
 
   // set the request method to GET
   int httpCode = http.GET();
@@ -75,8 +79,11 @@ void IcoMod_DVB::getTimestamp() {
 
 void IcoMod_DVB::onClick()
 {
-  // print that the module is clicked
-  Serial.println("DVB Module clicked");
+  _currentStopId = (_currentStopId + 1) % _stopIds.size();
+  _payload = "{\"limit\":8,\"stopid\":" + _stopIds[_currentStopId].as<String>() + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
+  _lastRefresh = 0;
+
+  Serial.println("DVB Module clicked, new stopid: " + _stopIds[_currentStopId].as<String>());
 }
 
 void IcoMod_DVB::initialize()
@@ -98,11 +105,15 @@ void IcoMod_DVB::refresh()
     _tft->fillScreen(_colors[0]);
 
     // TODO: draw the departures
-    TextUtils::printRightAligned(_tft, "DVB", 10, 10, 2, _colors[2]);
-    TextUtils::printRightAligned(_tft, "Zeit ", 0, 37, 1, _colors[1]);
+    TextUtils::printRightAligned(_tft, "Min ", 0, 37, 1, _colors[1]);
 
+    _tft->setCursor(5, 10);
+    _tft->setTextColor(_colors[2]);
+    _tft->print(_stopName);
+
+    _tft->setTextColor(_colors[1]);
     _tft->setCursor(5, 37);
-    _tft->print("Linie");
+    _tft->print("Line");
 
 
     // foreach departure
@@ -177,6 +188,16 @@ void IcoMod_DVB::refreshDepartures() {
     // get the departures array
     _departures = doc["Departures"];
 
+    _stopName = doc["Name"].as<String>();
+    // replace all special characters
+    _stopName.replace("ä", "ae");
+    _stopName.replace("ö", "oe");
+    _stopName.replace("ü", "ue");
+    _stopName.replace("ß", "ss");
+    _stopName.replace("Ä", "Ae");
+    _stopName.replace("Ö", "Oe");
+    _stopName.replace("Ü", "Ue");
+
   } else {
     // print the error
     Serial.println("Error on HTTP request");
@@ -205,11 +226,11 @@ String IcoMod_DVB::getHumanReadableTime(String time) {
   unsigned long long minutes = (difference / 60) + 1;
 
   if (minutes > 10000) {
-    return "jetzt";
+    return "now";
   }
 
 
-  return String(minutes) + "min";
+  return String(minutes);
 
 }
 
