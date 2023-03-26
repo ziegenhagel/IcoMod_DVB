@@ -6,11 +6,11 @@
     "license": "MIT",
     "config": [
         {
-            "name": "stopId",
+            "name": "stopIds",
             "type": "array",
             "of": "number",
             "min": 0,
-            "default": "33000029",
+            "default":[33000029,33000028],
             "description": "Die Haltestellen ID (z.B. 33000029), unter https://dvb.peppnet.de/stations/ zu finden",
             "autocomplete": {
                 "request": {
