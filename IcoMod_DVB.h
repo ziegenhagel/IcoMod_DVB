@@ -22,6 +22,7 @@ class IcoMod_DVB : public IcoMod
     void refresh();
     void refreshDepartures();
     String getHumanReadableTime(String time);
+    void getTimestamp();
 
   private:
     String _url;
@@ -30,6 +31,7 @@ class IcoMod_DVB : public IcoMod
     JsonArray _departures;
     Adafruit_ST7735* _tft;
     unsigned int* _colors;
+    unsigned long long _currentTimestamp;
 };
 
 #endif

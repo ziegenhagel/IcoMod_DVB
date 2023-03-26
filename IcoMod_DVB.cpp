@@ -9,8 +9,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <HTTPClient.h>
-#include <chrono>
 #include "TextUtils.h"
+#include <iostream>
+#include <ctime>
 
 IcoMod_DVB::IcoMod_DVB(Adafruit_ST7735* tft, unsigned int colors[], JsonObject &config)
 {
@@ -21,7 +22,7 @@ IcoMod_DVB::IcoMod_DVB(Adafruit_ST7735* tft, unsigned int colors[], JsonObject &
   String stopid = config["stopid"];
 
   // have the request string
-  _payload = "{\"limit\":7,\"stopid\":" + stopid + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
+  _payload = "{\"limit\":8,\"stopid\":" + stopid + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
 
   // last time the module was refreshed
   _lastRefresh = 0;
@@ -31,8 +32,45 @@ IcoMod_DVB::IcoMod_DVB(Adafruit_ST7735* tft, unsigned int colors[], JsonObject &
   _tft = tft;
   _colors = colors;
 
+  _currentTimestamp = 0;
+
+
+  // get the current timestamp
+  IcoMod_DVB::getTimestamp();
+
   // refresh the departures
   IcoMod_DVB::refreshDepartures();
+}
+
+// lets get the current timestamp from http://10.10.10.125:3000/api/timestamp
+void IcoMod_DVB::getTimestamp() {
+  // create a new http client
+  HTTPClient http;
+
+  // set the url
+  http.begin("http://10.10.10.125:3000/api/timestamp");
+
+  // set the request method to GET
+  int httpCode = http.GET();
+
+  // check if the request was successful
+  if (httpCode > 0) {
+    // get the payload
+    String payload = http.getString();
+
+    // parse the payload
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, payload);
+
+    // get the timestamp
+    _currentTimestamp = doc["timestamp"].as<unsigned long long>();
+  }
+
+  // close the connection
+  http.end();
+
+  // print the current timestamp
+
 }
 
 void IcoMod_DVB::onClick()
@@ -60,14 +98,15 @@ void IcoMod_DVB::refresh()
     _tft->fillScreen(_colors[0]);
 
     // TODO: draw the departures
-    TextUtils::printRightAligned(_tft, "DVB", 10, 10, 2, _colors[1]);
+    TextUtils::printRightAligned(_tft, "DVB", 10, 10, 2, _colors[2]);
+    TextUtils::printRightAligned(_tft, "Zeit ", 0, 37, 1, _colors[1]);
 
-    TextUtils::printRightAligned(_tft, "Linie         Zeit ", 0, 37, 1, _colors[1]);
+    _tft->setCursor(5, 37);
+    _tft->print("Linie");
+
 
     // foreach departure
     for (int i = 0; i < _departures.size(); i++) {
-
-      Serial.println("Departure: " + String(i));
 
       // get the departure
       JsonObject departure = _departures[i];
@@ -87,11 +126,20 @@ void IcoMod_DVB::refresh()
 
       String time = IcoMod_DVB::getHumanReadableTime(departure["RealTime"].as<String>());
 
+
+      //TextUtils::printLeftAligned(_tft, " "+ lineName + " " +direction, 0, 54 + (i * 12), 1, _colors[1]); 
+      _tft->setCursor(5, 54 + (i * 12));
+      _tft->print(lineName);
+      _tft->setCursor(20, 54 + (i * 12));
+      _tft->print(direction);
+
       // print the line name
-      TextUtils::printRightAligned(_tft, lineName + " " +direction +  "   "+time+" ", 0, 54 + (i * 12), 1, _colors[1]);
+      TextUtils::printRightAligned(_tft,  time+" ", 0, 54 + (i * 12), 1, _colors[1]);
+
+      // draw bitmap
+      // _tft->drawBitmap(0, 54 + (i * 12), _bitmap, 10, 10, _colors[1]);
     }
   }
-
 }
 
 
@@ -113,8 +161,6 @@ void IcoMod_DVB::refreshDepartures() {
 
   // check if the request was successful
   if (httpCode > 0) {
-    // print the http code
-    Serial.println(httpCode);
 
     // get the response
     String payload = http.getString();
@@ -123,7 +169,7 @@ void IcoMod_DVB::refreshDepartures() {
     // Serial.println(payload);
 
     // create a new json object
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(1024*12);
 
     // deserialize the json object
     deserializeJson(doc, payload);
@@ -144,16 +190,26 @@ void IcoMod_DVB::refreshDepartures() {
 String IcoMod_DVB::getHumanReadableTime(String time) {
 
   time = time.substring(6);
-  String unix_timestamp_string = time.substring(0, time.length() - 7);
+  String unix_timestamp_string = time.substring(0, time.length() - 10);
 
   // convert the string to a long
-  long timeLong = unix_timestamp_string.toInt();
+  unsigned long long timeLong = unix_timestamp_string.toInt();
 
-  // print the time
-  Serial.println("time: "+time);
-  Serial.println("timelong: "+String(timeLong));
+  // current time is the current timestamp + millis()
+  unsigned long long unix_timestamp_now = (_currentTimestamp + millis()) / 1000;
 
-  return "bald";
+  // difference between the current time and the departure time
+  unsigned long long difference = timeLong - unix_timestamp_now;
+  
+  // calculate difference in minutes and round (up) minutes
+  unsigned long long minutes = (difference / 60) + 1;
+
+  if (minutes > 10000) {
+    return "jetzt";
+  }
+
+
+  return String(minutes) + "min";
 
 }
 
