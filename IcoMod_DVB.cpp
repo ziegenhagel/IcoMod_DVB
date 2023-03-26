@@ -21,7 +21,7 @@ IcoMod_DVB::IcoMod_DVB(Adafruit_ST7735* tft, unsigned int colors[], JsonObject &
   String stopid = config["stopid"];
 
   // have the request string
-  _payload = "{\"limit\":5,\"stopid\":" + stopid + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
+  _payload = "{\"limit\":7,\"stopid\":" + stopid + ",\"isarrival\":false,\"shorttermchanges\":true,\"mentzonly\":false,\"mot\":[\"Tram\",\"CityBus\",\"Cableway\",\"Ferry\"]}";
 
   // last time the module was refreshed
   _lastRefresh = 0;
@@ -31,6 +31,8 @@ IcoMod_DVB::IcoMod_DVB(Adafruit_ST7735* tft, unsigned int colors[], JsonObject &
   _tft = tft;
   _colors = colors;
 
+  // refresh the departures
+  IcoMod_DVB::refreshDepartures();
 }
 
 void IcoMod_DVB::onClick()
@@ -60,7 +62,7 @@ void IcoMod_DVB::refresh()
     // TODO: draw the departures
     TextUtils::printRightAligned(_tft, "DVB", 10, 10, 2, _colors[1]);
 
-    TextUtils::printRightAligned(_tft, "Linie      Zeit ", 0, 37 , 1, _colors[1]);
+    TextUtils::printRightAligned(_tft, "Linie         Zeit ", 0, 37, 1, _colors[1]);
 
     // foreach departure
     for (int i = 0; i < _departures.size(); i++) {
@@ -69,12 +71,24 @@ void IcoMod_DVB::refresh()
 
       // get the departure
       JsonObject departure = _departures[i];
+
       String lineName = departure["LineName"].as<String>();
+
       String direction = departure["Direction"].as<String>();
-      String time = departure["RealTime"].as<String>();
+
+      // replace all ä/ö/ü with ae/oe/ue and ß with ss and Ä/Ö/Ü with Ae/Oe/Ue
+      direction.replace("ä", "ae");
+      direction.replace("ö", "oe");
+      direction.replace("ü", "ue");
+      direction.replace("ß", "ss");
+      direction.replace("Ä", "Ae");
+      direction.replace("Ö", "Oe");
+      direction.replace("Ü", "Ue");
+
+      String time = IcoMod_DVB::getHumanReadableTime(departure["RealTime"].as<String>());
 
       // print the line name
-      TextUtils::printRightAligned(_tft, lineName + " " +direction +  "   bald ", 0, 54 + (i * 12), 1, _colors[1]);
+      TextUtils::printRightAligned(_tft, lineName + " " +direction +  "   "+time+" ", 0, 54 + (i * 12), 1, _colors[1]);
     }
   }
 
@@ -129,47 +143,17 @@ void IcoMod_DVB::refreshDepartures() {
 // have a helper function to get a human readable time from the date format string
 String IcoMod_DVB::getHumanReadableTime(String time) {
 
-  // time looks like this \/Date(1679762460000-0000)\/
-  Serial.println(time);
-
-  // remove the first 6 characters
   time = time.substring(6);
+  String unix_timestamp_string = time.substring(0, time.length() - 7);
 
-  // remove the last 7 characters
-  time = time.substring(0, time.length() - 7);
+  // convert the string to a long
+  long timeLong = unix_timestamp_string.toInt();
 
- // convert the time to a long
-  long timeLong = atol(time.c_str()); // divide by 1000 to convert from milliseconds to seconds
+  // print the time
+  Serial.println("time: "+time);
+  Serial.println("timelong: "+String(timeLong));
 
-  // create a new time object
-  Serial.println(timeLong);
-
-  // create a new time object
-  time_t timeObject = timeLong;
-
-  // create a new time info object
-  struct tm * timeinfo;
-
-  // get the time info
-  timeinfo = localtime(&timeObject);
-  
-  // output the complete date and time
-  Serial.println(asctime(timeinfo));
-
-  // create a new string
-  String timeString;
-
-  // add the hours to the string
-  timeString += timeinfo->tm_hour;
-
-  // add the minutes to the string
-  timeString += ":";
-
-  // add the minutes to the string
-  timeString += timeinfo->tm_min;
-
-  // return the time string
-  return timeString;
+  return "bald";
 
 }
 
